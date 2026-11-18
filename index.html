@@ -274,7 +274,7 @@
       <svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.45-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.9 1.53 2.36 1.09 2.94.83.09-.65.35-1.09.63-1.34-2.22-.25-4.56-1.11-4.56-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.02a9.5 9.5 0 0 1 5 0c1.91-1.3 2.75-1.02 2.75-1.02.55 1.38.2 2.4.1 2.65.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.68-4.57 4.93.36.31.68.92.68 1.85v2.75c0 .26.18.58.69.48A10 10 0 0 0 12 2z"/></svg>
       <span data-download-label>Download for macOS</span>
     </a>
-    <div data-download-sub style="margin-top:12px;font-size:13px;color:var(--text-muted)">Also available for Windows and Linux</div>
+    <div data-download-sub style="margin-top:12px;font-size:13px;color:var(--text-muted)">Apple Silicon &amp; Intel</div>
   </div>
 
   <!-- FOOTER WORDMARK -->
@@ -299,51 +299,24 @@
 
 <script>
 (function(){
-  function detectOS(){
-    var platform = (navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || navigator.userAgent || '';
-    if (/mac/i.test(platform)) return 'mac';
-    if (/win/i.test(platform)) return 'windows';
-    if (/linux/i.test(platform) && !/android/i.test(navigator.userAgent || '')) return 'linux';
-    return null;
-  }
+  // macOS-only: always resolve the download button to the macOS .dmg.
+  var PATTERNS = [/_aarch64\.dmg$/i, /_x64\.dmg$/i];
 
-  var ASSET_PATTERNS = {
-    mac:     [/_aarch64\.dmg$/i, /_x64\.dmg$/i],
-    windows: [/_x64-setup\.exe$/i, /_x64_en-US\.msi$/i],
-    linux:   [/_amd64\.AppImage$/i, /_amd64\.deb$/i, /\.x86_64\.rpm$/i]
-  };
-  var LABELS = { mac: 'Download for macOS', windows: 'Download for Windows', linux: 'Download for Linux' };
-  var SUBS = {
-    mac: 'Apple Silicon — Intel build on the releases page',
-    windows: 'Windows 10/11, 64-bit',
-    linux: 'AppImage — .deb/.rpm on the releases page'
-  };
-
-  function pickAsset(assets, os){
-    var patterns = ASSET_PATTERNS[os] || [];
-    for (var i = 0; i < patterns.length; i++){
+  function pickAsset(assets){
+    for (var i = 0; i < PATTERNS.length; i++){
       for (var j = 0; j < assets.length; j++){
-        if (patterns[i].test(assets[j].name)) return assets[j];
+        if (PATTERNS[i].test(assets[j].name)) return assets[j];
       }
     }
     return null;
   }
 
-  var os = detectOS();
-  if (!os) return;
-
-  if (os !== 'mac') {
-    document.querySelectorAll('[data-mac-only]').forEach(function(el){ el.style.display = 'none'; });
-  }
-
   fetch('https://api.github.com/repos/adenijiayocharles/rerouteapp/releases/latest')
     .then(function(res){ return res.ok ? res.json() : Promise.reject(); })
     .then(function(data){
-      var asset = pickAsset(data.assets || [], os);
+      var asset = pickAsset(data.assets || []);
       if (!asset) return;
       document.querySelectorAll('[data-download-btn]').forEach(function(el){ el.href = asset.browser_download_url; });
-      document.querySelectorAll('[data-download-label]').forEach(function(el){ el.textContent = LABELS[os]; });
-      document.querySelectorAll('[data-download-sub]').forEach(function(el){ el.textContent = SUBS[os]; });
     })
     .catch(function(){ /* leave default links pointing at the releases page */ });
 })();
